@@ -1,6 +1,9 @@
 import * as path from 'path';
 import { FastifyInstance } from 'fastify';
 import AutoLoad from '@fastify/autoload';
+import sensible from './plugins/sensible';
+import root from './routes/root';
+import chat from './routes/chat';
 
 /* eslint-disable-next-line */
 export interface AppOptions {}
