@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import styles from './chat-interface.module.scss';
+import { Quiz, QuizData } from './quiz'; // Import your new component
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  widget?: { type: 'quiz'; data: QuizData }; // New optional field
 }
 
 export function ChatInterface() {
@@ -20,25 +22,30 @@ export function ChatInterface() {
     setIsLoading(true);
 
     try {
+      // Note: We send the history, but strip out the widget data
+      // because the backend only expects role/content strings for history context.
+      const historyPayload = messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: input,
-          history: messages, // Send history for context
-        }),
+        body: JSON.stringify({ message: input, history: historyPayload }),
       });
 
       const data = await response.json();
-      const aiMessage: Message = { role: 'assistant', content: data.response };
+
+      const aiMessage: Message = {
+        role: 'assistant',
+        content: data.response,
+        widget: data.widget, // Capture the widget data from backend
+      };
 
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
-      console.error('Error sending message:', error);
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: "Sorry, I couldn't reach the server." },
-      ]);
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -47,20 +54,20 @@ export function ChatInterface() {
   return (
     <div className={styles['chat-container']}>
       <div className={styles['messages']}>
-        {messages.length === 0 && (
-          <p className={styles['empty-state']}>Start a conversation!</p>
-        )}
         {messages.map((msg, idx) => (
           <div key={idx} className={`${styles['message']} ${styles[msg.role]}`}>
             <strong>{msg.role === 'user' ? 'You' : 'AI'}:</strong>
             <p>{msg.content}</p>
+
+            {/* CONDITIONAL RENDERING: If a widget exists, render it! */}
+            {msg.widget && msg.widget.type === 'quiz' && (
+              <Quiz data={msg.widget.data} />
+            )}
           </div>
         ))}
-        {isLoading && (
-          <div className={styles['loading']}>AI is thinking...</div>
-        )}
+        {isLoading && <div className={styles['loading']}>Thinking...</div>}
       </div>
-
+      {/* ... input area remains the same ... */}
       <div className={styles['input-area']}>
         <input
           type="text"
