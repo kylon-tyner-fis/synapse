@@ -1,0 +1,9 @@
+{
+  "name": "learn",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/learn/src",
+  "projectType": "application",
+  "tags": ["scope:learn"],
+  "// targets": "to see all targets run: nx show project learn --web",
+  "targets": {}
+}
