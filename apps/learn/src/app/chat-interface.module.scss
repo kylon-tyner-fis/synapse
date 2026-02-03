@@ -28,6 +28,60 @@ $border-radius-sm: 8px;
     Roboto,
     sans-serif;
   overflow: hidden;
+
+  /* Full Screen Transitions */
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Full Screen Mode Modifier */
+  &.full-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    margin: 0;
+    border-radius: 0;
+    z-index: 9999;
+    border: none;
+
+    /* Adjust padding for wide screens */
+    .messages {
+      padding: 2rem 15%;
+    }
+    .input-area {
+      padding: 1.5rem 15%;
+    }
+  }
+}
+
+// --- Toggle Button ---
+.fullscreen-toggle {
+  position: absolute;
+  top: 1.25rem;
+  right: 2rem;
+  z-index: 10;
+
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem 0.8rem;
+  border-radius: 8px;
+
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: $text-secondary;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+  &:hover {
+    background: #ffffff;
+    color: $primary-color;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+  }
 }
 
 // --- Messages Area ---

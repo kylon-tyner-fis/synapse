@@ -2,49 +2,31 @@ import { FastifyInstance } from 'fastify';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
 
-// 1. DEFINE THE TOOL SCHEMA
-// We describe exactly what the data structure should look like.
-// This forces the LLM to generate valid JSON matching our Frontend's expectations.
 const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
       name: 'generate_quiz',
       description:
-        "Generates a multiple choice quiz based on the user's request or conversation context.",
+        "Generates a multiple choice quiz based on the user's request.",
       parameters: {
         type: 'object',
         properties: {
-          title: {
-            type: 'string',
-            description: 'A creative title for the quiz based on the topic.',
-          },
+          title: { type: 'string' },
           questions: {
             type: 'array',
-            description: 'A list of 3-5 multiple choice questions.',
             items: {
               type: 'object',
               properties: {
-                title: { type: 'string', description: 'The question text.' },
+                title: { type: 'string' },
                 answers: {
                   type: 'array',
-                  description: 'A list of 3-4 possible answers.',
                   items: {
                     type: 'object',
                     properties: {
-                      title: {
-                        type: 'string',
-                        description: 'The answer text.',
-                      },
-                      feedback: {
-                        type: 'string',
-                        description:
-                          'Explanation of why this answer is correct or incorrect.',
-                      },
-                      isCorrect: {
-                        type: 'boolean',
-                        description: 'True if this is the correct answer.',
-                      },
+                      title: { type: 'string' },
+                      feedback: { type: 'string' },
+                      isCorrect: { type: 'boolean' },
                     },
                     required: ['title', 'feedback', 'isCorrect'],
                   },
@@ -55,6 +37,41 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
           },
         },
         required: ['title', 'questions'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'generate_coding_challenge',
+      description: 'Generates or updates a coding challenge.',
+      parameters: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Title of the challenge' },
+          description: {
+            type: 'string',
+            description:
+              'The static requirements/instructions. On RETRY, must be the ORIGINAL requirements.',
+          },
+          feedback: {
+            type: 'string',
+            description: 'Markdown string containing the structured review.',
+          },
+          files: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                language: { type: 'string' },
+                content: { type: 'string', description: 'The code content.' },
+              },
+              required: ['name', 'language', 'content'],
+            },
+          },
+        },
+        required: ['title', 'description', 'files'],
       },
     },
   },
@@ -73,19 +90,43 @@ export default async function (fastify: FastifyInstance) {
       const messages: ChatCompletionMessageParam[] = [
         {
           role: 'system',
-          content: `You are a helpful AI Tutor.
+          content: `You are a helpful AI Tutor and Senior Developer.
 
           RULES:
-          1. If the user asks for a quiz, use the 'generate_quiz' tool.
-             - Contextualize the quiz: If they were just talking about "React Hooks", generate a quiz about React Hooks.
-             - If no context exists, ask them what topic they want or generate a general "Web Development" quiz.
-             - Generate a quiz based on the user's request
-          2. When generating a quiz:
-             - Create challenging but fair questions.
-             - Provide helpful feedback for BOTH correct and incorrect answers.
-          3. If the user provides QUIZ RESULTS (e.g., "I scored 2/3..."):
-             - Analyze their performance.
-             - Suggest the next logical topic to learn.
+          1. **Quizzes**: Use 'generate_quiz' if the user asks for a quiz.
+
+          2. **New Challenges**: Use 'generate_coding_challenge'.
+             - **CRITICAL: PROVIDE BOILERPLATE CODE ONLY.**
+             - Leave 'feedback' empty.
+
+          3. **Reviewing Code (CRITICAL)**:
+             - **FRESHNESS PROTOCOL**: Ignore previous errors. Analyze ONLY the current code.
+             - **Distinguish Errors**:
+                - **Syntax Error**: Code that crashes or won't compile (e.g., missing brackets).
+                - **Logic/Requirement Error**: Code that runs but is incomplete (e.g., **Empty Functions** are logic errors, NOT syntax errors).
+
+             - **IF THE CODE FAILS:**
+               - **DO NOT** reply with text.
+               - **CALL \`generate_coding_challenge\` AGAIN.**
+               - **Title:** "Retry: [Original Title]".
+               - **description:** [Copy EXACTLY from the user's original requirements].
+               - **files:** Populate with the **EXACT CODE** the user submitted.
+               - **feedback:** You MUST use the markdown format below:
+
+               ### FEEDBACK TEMPLATE (Use this exact structure for the 'feedback' argument):
+               **Summary**
+               [1-2 sentences summarizing the status]
+
+               **✅ Passing Requirements**
+               - [Specific requirement met]
+               - [Specific logic that is correct]
+
+               **❌ Issues / Missing**
+               - [Specific Syntax Error or Crash (if any)]
+               - [Specific Missing Requirement or Logic Gap]
+
+             - **IF THE CODE PASSES:**
+               - Reply with text. Congratulate them.
           `,
         },
         ...(history || []),
@@ -101,21 +142,29 @@ export default async function (fastify: FastifyInstance) {
 
       const aiMessage = completion.choices[0].message;
 
-      // 2. HANDLE THE GENERATED DATA
       if (aiMessage.tool_calls) {
         for (const toolCall of aiMessage.tool_calls) {
-          if (
-            toolCall.type === 'function' &&
-            toolCall.function.name === 'generate_quiz'
-          ) {
-            // The LLM generated the quiz content inside 'arguments' string.
-            // We parse it into real JSON.
-            const generatedQuizData = JSON.parse(toolCall.function.arguments);
+          if (toolCall.type !== 'function') continue;
 
-            // Send it to the frontend just like before
+          const fn = toolCall.function;
+          const args = JSON.parse(fn.arguments);
+
+          if (fn.name === 'generate_quiz') {
             return {
-              response: `I've generated a quiz about "${generatedQuizData.title}" for you. Good luck!`,
-              widget: { type: 'quiz', data: generatedQuizData },
+              response: `I've generated a quiz about "${args.title}".`,
+              widget: { type: 'quiz', data: args },
+            };
+          }
+
+          if (fn.name === 'generate_coding_challenge') {
+            // If feedback is present, we use a different response message
+            const responseText = args.feedback
+              ? `I've reviewed your code. See the results below.`
+              : `Here is a coding challenge: **${args.title}**.`;
+
+            return {
+              response: responseText,
+              widget: { type: 'coding_challenge', data: args },
             };
           }
         }

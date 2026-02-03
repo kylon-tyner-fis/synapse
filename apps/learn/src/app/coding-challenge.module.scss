@@ -1,0 +1,233 @@
+.ideContainer {
+  display: flex;
+  flex-direction: column;
+  background: #1e1e1e; /* VS Code Dark BG */
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 1rem;
+  border: 1px solid #333;
+  color: #d4d4d4;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+.header {
+  background: #252526;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #333;
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: #fff;
+  }
+}
+
+.description {
+  padding: 1rem;
+  background: #2d2d2d;
+  font-size: 0.9rem;
+  border-bottom: 1px solid #333;
+  max-height: 150px;
+  overflow-y: auto;
+
+  p {
+    margin: 0 0 0.5rem 0;
+  }
+  code {
+    background: #444;
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+}
+
+.editorWorkspace {
+  display: flex;
+  height: 350px; /* Fixed height for editor */
+}
+
+.sidebar {
+  width: 180px;
+  background: #252526;
+  border-right: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+
+  .sidebarHeader {
+    padding: 0.5rem 1rem;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: #888;
+    letter-spacing: 1px;
+  }
+
+  .fileTab {
+    background: transparent;
+    border: none;
+    color: #ccc;
+    padding: 0.5rem 1rem;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+
+    &:hover {
+      background: #2a2d2e;
+      color: #fff;
+    }
+    &.active {
+      background: #37373d;
+      color: #fff;
+      border-left: 2px solid #007acc;
+    }
+
+    .icon {
+      color: #519aba;
+      font-family: monospace;
+      font-weight: bold;
+    }
+  }
+}
+
+.editorArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #1e1e1e;
+
+  .breadcrumbs {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    color: #888;
+    background: #1e1e1e;
+    border-bottom: 1px solid #2d2d2d;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .langBadge {
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    opacity: 0.5;
+  }
+}
+
+.codeInput {
+  flex: 1;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border: none;
+  padding: 1rem;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  white-space: pre;
+  overflow: auto;
+  tab-size: 2;
+
+  &::selection {
+    background: #264f78;
+  }
+}
+
+.footer {
+  padding: 0.75rem;
+  background: #252526;
+  border-top: 1px solid #333;
+  display: flex;
+  justify-content: flex-end;
+
+  .submitBtn {
+    background: #007acc;
+    color: white;
+    border: none;
+    padding: 0.5rem 1.2rem;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &:hover {
+      background: #0062a3;
+    }
+    &:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+  }
+}
+
+.feedbackAlert {
+  background: #fef2f2; /* Red-ish background */
+  border-bottom: 1px solid #fee2e2;
+  padding: 1rem;
+  color: #991b1b;
+  font-size: 0.9rem;
+  animation: slideDown 0.3s ease-out;
+
+  strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    color: #7f1d1d;
+  }
+
+  p {
+    margin: 0;
+    line-height: 1.4;
+  }
+}
+
+.feedbackAlert {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0;
+  animation: slideDown 0.3s ease-out;
+
+  .feedbackHeader {
+    background: #fff7ed; /* Light Orange/Yellow */
+    color: #9a3412;
+    padding: 0.75rem 1rem;
+    font-weight: bold;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #fed7aa;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .feedbackContent {
+    padding: 1rem;
+    font-size: 0.95rem;
+    color: #374151;
+    line-height: 1.6;
+
+    /* Markdown Styles inside Feedback */
+    p {
+      margin: 0 0 0.5rem 0;
+    }
+    ul {
+      margin: 0.5rem 0;
+      padding-left: 1.5rem;
+    }
+    li {
+      margin-bottom: 0.25rem;
+    }
+    strong {
+      color: #111827;
+    }
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

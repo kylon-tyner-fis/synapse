@@ -1,19 +1,23 @@
 import { useState, useRef, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown'; // Import the renderer
-import remarkGfm from 'remark-gfm'; // Import the plugin
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import styles from './chat-interface.module.scss';
 import { Quiz, QuizData, QuizResult } from './quiz';
+import { CodingChallenge, ChallengeData, FileData } from './coding-challenge';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
-  widget?: { type: 'quiz'; data: QuizData };
+  widget?:
+    | { type: 'quiz'; data: QuizData }
+    | { type: 'coding_challenge'; data: ChallengeData };
 }
 
 export function ChatInterface() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,17 +66,38 @@ export function ChatInterface() {
   const handleQuizComplete = (results: QuizResult[]) => {
     const correctCount = results.filter((r) => r.isCorrect).length;
     const total = results.length;
-
     let report = `I finished the quiz. I scored ${correctCount} out of ${total}.\n\nDetails:\n`;
     results.forEach((r) => {
       report += `- Question: "${r.question}"\n  My Answer: "${r.userAnswer}" (${r.isCorrect ? 'Correct' : 'Wrong'})\n`;
     });
+    callApi(report, messages);
+  };
+
+  const handleChallengeSubmit = (files: FileData[], description: string) => {
+    let report = `I have completed the coding challenge. Here are my files:\n\n`;
+    files.forEach((f) => {
+      report += `--- FILE: ${f.name} (${f.language}) ---\n`;
+      report += `${f.content}\n\n`;
+    });
+
+    report += `\n\n--- ORIGINAL REQUIREMENTS ---\n${description}\n`;
+    report += `\n(Please verify if the code meets these specific requirements. Do not offer outside suggestions.)`;
 
     callApi(report, messages);
   };
 
   return (
-    <div className={styles['chat-container']}>
+    <div
+      className={`${styles['chat-container']} ${isFullScreen ? styles['full-screen'] : ''}`}
+    >
+      <button
+        className={styles['fullscreen-toggle']}
+        onClick={() => setIsFullScreen(!isFullScreen)}
+        title={isFullScreen ? 'Exit Full Screen' : 'Enter Full Screen'}
+      >
+        {isFullScreen ? '↙️ Minimize' : '↗️ Full Screen'}
+      </button>
+
       <div className={styles['messages']}>
         {messages.length === 0 && (
           <div className={styles['empty-state']}>
@@ -81,13 +106,14 @@ export function ChatInterface() {
             <p>
               I can help you learn about Nx, React, and Modern Web Development.
             </p>
-
             <div className={styles['suggestions']}>
               <button onClick={() => sendMessage('I want to take a quiz')}>
                 📝 Take a Quiz
               </button>
-              <button onClick={() => sendMessage('Tell me about Nx caching')}>
-                🚀 Explain Nx Caching
+              <button
+                onClick={() => sendMessage('Give me a React coding challenge')}
+              >
+                💻 Coding Challenge
               </button>
             </div>
           </div>
@@ -97,21 +123,27 @@ export function ChatInterface() {
           <div key={idx} className={`${styles['message']} ${styles[msg.role]}`}>
             <strong>{msg.role === 'user' ? 'You' : 'AI'}:</strong>
             <div className={styles.bubble}>
-              {/* RENDER MARKDOWN HERE */}
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  // Optional: Override specific elements if needed
-                  a: ({ node, ...props }) => (
-                    <a {...props} target="_blank" rel="noopener noreferrer" />
-                  ),
-                }}
-              >
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {msg.content}
               </ReactMarkdown>
 
               {msg.widget && msg.widget.type === 'quiz' && (
                 <Quiz data={msg.widget.data} onComplete={handleQuizComplete} />
+              )}
+
+              {msg.widget && msg.widget.type === 'coding_challenge' && (
+                <CodingChallenge
+                  data={msg.widget.data}
+                  // FIX APPLIED HERE:
+                  // 1. msg.widget! asserts it's not null (safe because of the && check)
+                  // 2. as ChallengeData ensures TS knows it has a 'description'
+                  onSubmit={(files) =>
+                    handleChallengeSubmit(
+                      files,
+                      (msg.widget!.data as ChallengeData).description,
+                    )
+                  }
+                />
               )}
             </div>
           </div>
